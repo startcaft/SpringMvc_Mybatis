@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+	namespace命名空间，作用就是对sql进行分类划管理，对sql隔离。
+	注意：使用mapper代理的方式来开发，namespace有特殊的作用
+ -->
+<mapper namespace="test">
+   
+   <!-- 
+   	id属性，也成为statement的id，将sql语句封装到statement对象中。
+   	#{}表示一个占位符
+   	#{id}其中的id，接收的输入参数，参数名称就是id。
+   		如果输入参数是简单类型，#{}中的参数名可以任意。
+   	parameterType代表输入参数类型。
+   	resultType代表SQL输出结果所映射的java对象,
+   		select元素指定的resultType代表将单条记录映射成的java对象。
+    -->
+   <select id="findUserById" parameterType="int" resultType="com.startcaft.mybatis.po.User">
+   		SELECT * FROM USER WHERE id = #{value}
+   </select>
+   
+   <!-- 
+   	resultType:指定单条记录所映射的java对象类型
+   	${}：表示拼接SQL字符串,将接收参数的内容不加任何修饰的拼接在SQL中,
+   		会有SQL注入的隐患。
+   	${value}：接收参数的内容，如果是简单类型，${}只能使用value。
+    -->
+   <select id="findUserByName" parameterType="java.lang.String" resultType="com.startcaft.mybatis.po.User">
+   		select * from user where username like '%${value}%'
+   </select>
+   
+   <!-- 
+   	parameterType:指定输入参数的类型是pojo，
+   		mybatis通过OGNL获取对象的值。
+    -->
+   <insert id="insertUser" parameterType="com.startcaft.mybatis.po.User">
+   		<!-- 自增主键的返回 -->
+   		<selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+   			select last_insert_id()
+   		</selectKey>
+   		<!-- 非自增主键的返回 
+   		<selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">
+   			select uuid()
+   		</selectKey>
+   		-->
+   		insert into user(username,birthday,sex,address)
+   		value(#{username},#{birthday},#{sex},#{address})
+   </insert>
+   
+   <delete id="deleteUser" parameterType="int">
+   		delete from user where id = #{id}
+   </delete>
+   
+   <update id="updateUser" parameterType="com.startcaft.mybatis.po.User">
+   		update user set 
+   		username=#{username},birthday=#{birthday},sex=#{sex},address=#{address} 
+   		where id = #{id}
+   </update>
+  
+    
+</mapper>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.startcaft.mybatis.mapper.OrdersMapperCustom">
+	
+	<select id="findOrdersUser" resultType="com.startcaft.mybatis.po.OrdersCustom">
+		SELECT o.*,u.username,u.sex,u.address FROM orders o,USER u 
+		WHERE o.user_id = u.id
+	</select>
+	
+	<!-- 订单查询，关联用户的resultMap -->
+	<resultMap type="com.startcaft.mybatis.po.Orders" id="order_user_resultMap">
+		<!-- 配置订单映射 -->
+		<id column="id" property="id"/>
+		<result column="user_id" property="userId"/>
+		<result column="number" property="number"/>
+		<result column="createtime" property="createtime"/>
+		<result column="note" property="note"/>
+		<!-- 配置订单的关联信息 -->
+		<!-- 
+			association：用于映射关联查询单个对象的信息 
+			property：将要关联查询的用户信息映射到Orders中的哪个属性
+		-->
+		<association property="user" javaType="com.startcaft.mybatis.po.User">
+			<id column="user_id" property="id"/>
+			<result column="sex" property="sex"/>
+			<result column="username" property="username"/>
+			<result column="address" property="address"/>
+		</association>
+	</resultMap>
+	
+	<!-- 使用resultMap映射关联查询 -->
+	<select id="findOrdersUserByMap" resultMap="order_user_resultMap">
+		SELECT o.*,u.username,u.sex,u.address FROM orders o,USER u 
+		WHERE o.user_id = u.id
+	</select>
+	
+	<!-- 查询订单，及订单明细的的resultMap，使用extends继承，就不用配置用户和订单的映射了 -->
+	<resultMap type="com.startcaft.mybatis.po.Orders" id="order_orderDetail_resultMap" extends="order_user_resultMap">
+		<!-- 关联明细信息 -->
+		<!-- 
+			使用collection映射关联查询到的多条记录，映射到集合对象中 
+			property：所映射到的集合属性
+			ofType：指定映射集合中的pojo的类型
+		-->
+		<collection property="orderDetails" ofType="com.startcaft.mybatis.po.OrderDetail">
+			<id column="order_detail_id" property="id"/>
+			<result column="items_id" property="itemsId"/>
+			<result column="items_number" property="number"/>
+			<result column="orders_id" property="ordersId"/>
+		</collection>
+	</resultMap>
+	
+	<select id="findOrderAndDetailResultMap" resultMap="order_orderDetail_resultMap">
+		SELECT 
+			o.*,
+			u.username,
+			u.sex,
+			u.address,
+			od.id order_detail_id,
+			od.items_id,
+			od.items_number,
+			od.orders_id
+		FROM 
+			orders o,USER u,orderDetail od
+		WHERE o.user_id = u.id AND od.orders_id = o.id
+	</select>
+	
+	<!-- 查询用户，即用户所购买的商品resultMap -->
+	<resultMap type="com.startcaft.mybatis.po.User" id="user_items">
+		<id column="user_id" property="id"/>
+		<result column="username" property="username"/>
+		<result column="sex" property="sex"/>
+		<result column="address" property="address"/>
+		<!-- 一个用户对应多个订单 -->
+		<collection property="orderList" ofType="com.startcaft.mybatis.po.Orders">
+			<id column="id" property="id"/>
+			<result column="user_id" property="userId"/>
+			<result column="number" property="number"/>
+			<result column="createtime" property="createtime"/>
+			<result column="note" property="note"/>
+			<!-- 一个订单包含多个订单明细 -->
+			<collection property="orderDetails" ofType="com.startcaft.mybatis.po.OrderDetail">
+				<id column="order_detail_id" property="id"/>
+				<result column="orders_id" property="ordersId"/>
+				<result column="items_id" property="itemsId"/>
+				<result column="items_number" property="number"/>
+				<!-- 一个订单明细对应一个商品 -->
+				<association property="items" javaType="com.startcaft.mybatis.po.Items">
+					<id column="items_id" property="id"/>
+					<result column="items_name" property="name"/>
+					<result column="items_price" property="price"/>
+					<result column="items_detail" property="detail"/>
+				</association>
+			</collection>
+		</collection>
+	</resultMap>
+	
+	<select id="findUserAndItemsResultMap" resultMap="user_items">
+		SELECT 
+			o.*,
+			u.username,
+			u.sex,
+			u.address,
+			od.id order_detail_id,
+			od.items_id,
+			od.items_number,
+			od.orders_id,
+			i.name items_name,
+			i.price items_price,
+			i.detail items_detail
+		FROM 
+			orders o,USER u,orderDetail od,items i
+		WHERE o.user_id = u.id AND od.orders_id = o.id AND od.items_id = i.id
+	</select>
+	
+	<!-- 查询订单，关联查询用户，用户信息需要延迟加载 -->
+	<select id="findOrderUserLoadlazy" resultMap="order_user_lazy">
+		select * from orders
+	</select>
+	
+	<!-- 延迟加载的resultMap -->
+	<resultMap type="com.startcaft.mybatis.po.Orders" id="order_user_lazy">
+		<!-- 对订单信息进行配置 -->
+		<id column="id" property="id"/>
+		<result column="user_id" property="userId"/>
+		<result column="createtime" property="createtime"/>
+		<result column="number" property="number"/>
+		<result column="note" property="note"/>
+		<!-- 
+			实现对用户信息延迟加载 
+			select：指定延迟加载需要执行的SQL语句，也就是statement的id。
+			column：订单信息中关联用户信息的关联查询的列。
+			(SELECT username FROM USER WHERE orders.`user_id` = user.`id`) username,
+			(SELECT sex FROM USER WHERE orders.`user_id` = user.`id`) sex,
+			(SELECT address FROM USER WHERE orders.`user_id` = user.`id`) address
+		-->
+		<association property="user" 
+			javaType="com.startcaft.mybatis.po.User" 
+			select="com.startcaft.mybatis.mapper.UserMapper.findUserById" 
+			column="user_id">
+		</association>
+	</resultMap>
+</mapper>

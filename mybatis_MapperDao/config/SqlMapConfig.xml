@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!-- 加载外部属性文件 -->
+    <properties resource="db.properties">
+        <!-- 这里还可以添加一些属性，这些属性首先被mybaitsi读取。 
+      	<property name="jdbc.driver" value=""></property>
+      	-->
+    </properties>
+    
+    <!-- 全局配置参数 -->
+    <settings>
+      	<setting name="lazyLoadingEnabled" value="true"/>
+      	<!-- 消极加载，按需加载 -->
+      	<setting name="aggressiveLazyLoading" value="false"/>
+      	<!-- 开启二级缓存开关 -->
+      	<setting name="cacheEnabled" value="true"/>
+    </settings>
+     
+     
+     <!-- pojo别名定义 -->
+     <typeAliases>
+         <!-- 
+         	针对单个别名定义
+         	type:全类名
+         	alias:别名
+          
+         <typeAlias type="com.startcaft.mybatis.po.User" alias="user"/>
+         -->
+         <!-- 
+         	批量别名定义 
+         	指定包名，mybatis自动扫描包中的类，自动定义别名，别名就是类名，首字母大小写都OK？
+         -->
+		<package name="com.startcaft.mybatis.po"/>
+     </typeAliases>
+     
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driverClass}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.user}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+	
+	<!-- 加载映射文件 -->
+	<mappers>
+	    <mapper resource="SqlMap/user.xml"></mapper>
+	    <!-- 通过 resource属性 单个加载映射文件
+	    <mapper resource="Mapper/UserMapper.xml"></mapper>
+	     -->
+	    
+	    <!-- 
+	    	class属性 通过Mapper接口加载映射文件
+	    	需要遵循一些规范：
+	    	1，需要将Mapper接口的类名和映射文件的名称 保持一致，且在一个包(目录)下。
+	    	2，这个规范的前提，使用的是Mapper接口代理的方式开发DAO。
+	   	 <mapper class="com.startcaft.mybatis.mapper.UserMapper"/>
+	   	 -->
+	   	 
+	   	 <!-- 批量加载，上面的规则也要遵循 -->
+	   	 <package name="com.startcaft.mybatis.mapper"/>
+	</mappers>
+	
+</configuration>

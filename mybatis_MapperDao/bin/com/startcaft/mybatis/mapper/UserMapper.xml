@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace命名空间，作用就是对sql进行分类划管理，对sql隔离。 注意：使用mapper代理的方式来开发，namespace有特殊的作用 -->
+<mapper namespace="com.startcaft.mybatis.mapper.UserMapper">
+	
+	<!-- 开启本mapper的namespace下的二级缓存 -->
+	<cache/>
+	
+	<!-- 
+		定义SQL片段，用于其他statement引用,
+		注意：SQL片段一般基于单表定义，这样的话重用性才高。
+		注意：在SQL片段中不要包括where。
+	 -->
+	 <sql id="query_user_where">
+	 	<if test="userCustom != null">
+			<if test="userCustom.sex != null and userCustom.sex != ''">
+				and user.sex = #{userCustom.sex} 
+			</if>
+			<if test="userCustom.address != null and userCustom.address != ''">
+				and user.address LIKE '%${userCustom.address}%'
+			</if>
+			<if test="ids != null">
+				<!-- 
+					使用foeach遍历多个id
+					使用 and (id=1 or id=2 or id=3)的SQL语句
+					collection属性：指定输入对象中的集合属性
+					item属性：每次遍历生成的对象
+					open属性：开始遍历时拼接的SQL串
+					close属性：结束遍历时拼接的SQL串
+					separator属性：两次遍历中间需要拼接的串
+				
+				<foreach collection="ids" item="user_id" open="and (" close=")" separator="or">
+					id=#{user_id}
+				</foreach>
+				-->
+				<!-- 实现 and id in (1,2,3) -->
+				<foreach collection="ids" item="user_id" open="and id in (" close=")" separator=",">
+					<!-- 每次遍历所要拼接的SQL串 -->
+					#{user_id}
+				</foreach>
+			</if>
+		</if>
+	 </sql>
+
+	<!-- 
+		定义一个resultMap
+		将SELECT id id_,username username_ FROM USER WHERE 和 User类中的属做一个映射关系
+		type属性：resultMap最终映射的java对象的类型，可以使用别名
+		id属性：对resultMap的唯一标识
+	-->
+	 <resultMap type="user" id="userResultMap">
+	 	 <!-- 
+	 		id元素表示结果集中的唯一标识的映射
+	 		column：查询出来的列名
+	 		property：type指定的pojo类型中的属性
+	 	 -->
+	 	 <id column="id_" property="id"/>
+	 	 <!-- 
+	 	 	result元素表示对普通列名的映射
+	 	 	column：查询出来的列名
+	 	 	最终resultMap对column和property作一个映射关系(对应关系)
+	 	 -->
+	 	 <result column="username_" property="username"/>
+	 </resultMap>
+
+	<!-- 
+		用户综合查询 
+		#{userCustom.sex}：取出包装类型中sex属性的值
+		 ${userCustom.address}：取出包装类型中address属性的值 
+	-->
+	<select id="findUserList" parameterType="com.startcaft.mybatis.po.UserQueryVo"
+			resultType="com.startcaft.mybatis.po.UserCustom">
+			
+		SELECT * FROM USER
+		
+		<!-- where 元素的好处在于，自动去掉条件中的第一个 and -->
+		<where>
+			<!-- 引用SQL片段,如果指定的SQL片段不要本映射文件中，需要加上namespace -->
+			<include refid="query_user_where"></include>
+			
+			<!-- 在这里还可以引用其他的SQL片段 -->
+		</where>
+	</select>
+	
+	<!-- 综合查询总数，resultType输出简单类型 -->
+	<select id="findUserListCount" parameterType="com.startcaft.mybatis.po.UserQueryVo"
+			resultType="int">
+		SELECT count(*) FROM USER
+		<where>
+			<!-- 引用SQL片段,如果指定的SQL片段不要本映射文件中，需要加上namespace -->
+			<include refid="query_user_where"></include>
+			
+			<!-- 在这里还可以引用其他的SQL片段 -->
+		</where>
+	</select>
+	
+	<select id="findUserById" parameterType="int" resultType="user">
+		SELECT * FROM USER WHERE id = #{value}
+	</select>
+
+	<!-- 使用resultMap映射输出 ，resultMap属性指定定义的reusltMap的ID，如果定义在其他映射文件，需要加上namespace-->
+	<select id="findUserByIdResultMap" parameterType="int" resultMap="userResultMap">
+		SELECT id id_,username username_ FROM USER WHERE id = #{value}
+	</select>
+
+	<select id="findUserByName" parameterType="java.lang.String"
+		resultType="com.startcaft.mybatis.po.User">
+		select * from user where username like '%${value}%'
+	</select>
+
+	<insert id="insertUser" parameterType="com.startcaft.mybatis.po.User">
+		<!-- 自增主键的返回 -->
+		<selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+			select
+			last_insert_id()
+		</selectKey>
+		<!-- 非自增主键的返回 <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String"> 
+			select uuid() </selectKey> -->
+		insert into user(username,birthday,sex,address)
+		value(#{username},#{birthday},#{sex},#{address})
+	</insert>
+
+	<delete id="deleteUser" parameterType="int">
+		delete from user where id
+		= #{id}
+	</delete>
+
+	<update id="updateUser" parameterType="com.startcaft.mybatis.po.User">
+		update user set
+		username=#{username},birthday=#{birthday},sex=#{sex},address=#{address}
+		where id = #{id}
+	</update>
+
+</mapper>

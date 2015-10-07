@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    
+	<typeAliases>
+		<package name="com.startcaft.ssm.po" />
+	</typeAliases>
+
+	<mappers>
+		<mapper resource="sqlmap/user.xml"></mapper>
+		<!-- 和spring整合后，使用的是spring的扫描器，这里就不需要配置了 
+		<package name="com.startcaft.ssm.mapper" />
+		-->
+	</mappers>
+
+</configuration>
